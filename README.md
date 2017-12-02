@@ -12,4 +12,5 @@ This file was created for the purposes of the AWS DynamoDB Course from [aCloud.G
 ##IMPORTANT
 These files are distributed on an AS IS BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied
 
-## Ported to new Repo Dec 2017
+##Dec 2017
+Ported to this new Repo

@@ -1,0 +1,111 @@
+{
+  "Mappings": {
+      "AWSRegionToAMI": {
+          "us-east-1": {
+              "AMI": "ami-6869aa05"
+          },
+          "us-east-2": {
+              "AMI": "ami-58277d3d"
+          },
+          "us-west-2": {
+                "AMI": "ami-7172b611"
+            },
+          "us-west-1": {
+                "AMI": "ami-31490d51"
+            },
+          "eu-west-1": {
+                "AMI": "ami-f9dd458a"
+            },
+          "eu-central-1": {
+                "AMI": "ami-ea26ce85"
+            },
+          "ap-southeast-1": {
+                "AMI": "ami-a59b49c6"
+            },
+            "ap-northeast-2": {
+                  "AMI": "ami-2b408b45"
+              },
+          "ap-northeast-1": {
+                "AMI": "ami-374db956"
+            },
+          "ap-southeast-2": {
+                "AMI": "ami-dc361ebf"
+            },
+            "ap-south-1": {
+                  "AMI": "ami-ffbdd790"
+              },
+          "sa-east-1": {
+                  "AMI": "ami-6dd04501"
+            },
+          "cn-north-1": {
+                "AMI": "ami-8e6aa0e3"
+            }
+
+      }
+  },
+  "Resources" : {
+    "Ec2Instance" : {
+      "Metadata" : {
+        "AWS::CloudFormation::Init" : {
+          "config" : {
+            "sources" : {
+              "/home/ec2-user/" : "https://github.com/acantril/aCloudGuru-DynamoDB/tarball/master"
+            },
+            "commands" : {
+              "1-retryjson" : {
+                "command" : "mkdir -p /home/ec2-user/.aws/model && cp /home/ec2-user/01-configuring-your-aws-account/_retry.json \"$_\""
+              },
+              "2-permissions" : {
+                "command" : "chown ec2-user:ec2-user /home/ec2-user/* -hR"
+              },
+              "3-permissionshidden" : {
+                "command" : "chown ec2-user:ec2-user /home/ec2-user/.* -hR"
+              },
+              "4-permissionsaws" : {
+                "command" : "chown ec2-user:ec2-user /home/ec2-user/.aws/ -R"
+              }
+            }
+          }
+        }
+      },
+      "Type" : "AWS::EC2::Instance",
+      "Properties" : {
+        "ImageId" : {"Fn::FindInMap" : ["AWSRegionToAMI", {"Ref" : "AWS::Region"}, "AMI"]},
+        "InstanceType" : "t2.micro",
+        "KeyName" : "DDBCourse",
+        "UserData"       : { "Fn::Base64" : { "Fn::Join" : ["", [
+          "#!/bin/bash -xe\n",
+          "yum update -y aws-cfn-bootstrap\n",
+          "yum install -y gcc\n",
+          "pip install boto3\n",
+          "pip install Faker\n",
+          "pip install tqdm\n",
+          "pip install multiprocessing\n",
+
+
+          "/opt/aws/bin/cfn-init -v ",
+          "         --stack ", { "Ref" : "AWS::StackName" },
+          "         --resource Ec2Instance ",
+          "         --region ", { "Ref" : "AWS::Region" }, "\n",
+
+          "/opt/aws/bin/cfn-signal -e $? ",
+          "         --stack ", { "Ref" : "AWS::StackName" },
+          "         --resource Ec2Instance ",
+          "         --region ", { "Ref" : "AWS::Region" }, "\n"
+        ]]}},
+        "Tags" : [ { "Key"   : "Name", "Value" : "LOLabMachine"} ]
+      },
+      "CreationPolicy" : {
+        "ResourceSignal" : {
+          "Timeout" : "PT10M"
+        }
+      }
+    }
+  },
+  "Outputs" : {
+    "LabmachineIP" : {
+      "Description" : "IP Address of LAB Machine",
+      "Value" : {"Fn::GetAtt" : ["Ec2Instance","PublicIp"]}
+    }
+  }
+}

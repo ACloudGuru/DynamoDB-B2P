@@ -1,0 +1,139 @@
+{
+  "Parameters" : {
+    "SNSTopicArn" : {
+      "Type" : "String",
+      "Description" : "ARN of SNS Topic for notifications"
+    },
+    "EXAMStreamARN" : {
+      "Type" : "String",
+      "Description" : "ARN of the Dynamo DB Stream for the lo_exams table.."
+    }
+  },
+  "Resources" : {
+    "IAMRole" : {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+          "AssumeRolePolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                  {
+                      "Effect": "Allow",
+                      "Principal": {
+                          "Service": ["lambda.amazonaws.com"]
+                      },
+                      "Action": ["sts:AssumeRole"]
+                  }
+              ]
+          },
+          "Path": "/"
+      }
+    },
+    "IAMPolicy" : {
+      "DependsOn": [
+          "IAMRole"
+      ],
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+          "PolicyName": "LambdaTriggerPermissions",
+          "Roles": [
+              {"Ref": "IAMRole"}
+          ],
+          "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                  {
+                      "Effect": "Allow",
+                      "Action": ["logs:*"],
+                      "Resource": ["arn:aws:logs:*:*:*"]
+                  },
+                  {
+                      "Effect": "Allow",
+                      "Action": [
+                        "sns:*"
+                      ],
+                      "Resource": ["*"]
+                  },
+                  {
+                      "Effect": "Allow",
+                      "Action": [
+                        "s3:*"
+                      ],
+                      "Resource": ["*"]
+                  },
+                  {
+                      "Effect": "Allow",
+                      "Action": [
+                        "dynamodb:*",
+                        "kinesis:*"
+                      ],
+                      "Resource": ["*"]
+                  }
+              ]
+          }
+      }
+    },
+    "LAMBDA" : {
+      "Type": "AWS::Lambda::Function",
+      "DependsOn": [
+          "IAMRole",
+          "IAMPolicy"
+      ],
+      "Properties" : {
+        "Role": {
+            "Fn::GetAtt": ["IAMRole", "Arn"]
+        },
+        "Code" : {
+          "ZipFile" : {
+            "Fn::Join" : [
+              "",
+              [
+                "import boto3\n",
+                "print ('Loading Lambda Trigger - GradeChange')\n",
+                "snsarn = '", {"Ref" : "SNSTopicArn"}, "'\n",
+                "\n",
+                "def lambda_handler(event, context):\n",
+                "\tfor r in event['Records']:\n",
+                "\t\trecord=r['dynamodb']\n",
+                "\t\tif ('NewImage' in record.keys()) and ('OldImage' in record.keys()):\n",
+                "\t\t\tif ('grade' in record['NewImage'].keys()) and ('grade' in record['OldImage'].keys()):\n",
+                "\t\t\t\tnewgrade = int(record['NewImage']['grade']['N'])\n",
+                "\t\t\t\toldgrade = int(record['OldImage']['grade']['N'])\n",
+                "\t\t\t\tprint 'Parsing exam record [%s]' % (record['NewImage']['id']['S'])\n",
+                "\t\t\t\tif oldgrade != newgrade:\n",
+                "\t\t\t\t\tsns = boto3.client('sns', region_name=r['awsRegion'])\n",
+                "\t\t\t\t\tmessage = 'Exam grade change detected, exam [%s]' % record['NewImage']['id']['S']\n",
+                "\t\t\t\t\tmessage += 'old grade [%d], new grade [%d], ' % (oldgrade, newgrade)\n",
+                "\t\t\t\t\tmessage += 'student [%s]' % record['NewImage']['s_id']['S']\n",
+                "\t\t\t\t\tprint 'Sending Message :: %s' % message\n",
+                "\t\t\t\t\tsns.publish(TargetArn=snsarn, Subject='Grade Change Detected', Message=message)\n",
+                "\t\t\t\telse:\n",
+                "\t\t\t\t\tprint 'No Grade-Change Detected .. no strange activity detected'\n",
+                "\n",
+                "\treturn('Function Completed')\n",
+                "\n",
+                "\n"
+              ]
+            ]
+          }
+        },
+        "Timeout": 300,
+        "Handler": "index.lambda_handler",
+        "Runtime": "python2.7",
+        "MemorySize": 128
+      }
+    },
+    "LambdaEventSource" : {
+      "DependsOn": [
+        "IAMRole",
+        "IAMPolicy"
+      ],
+      "Type": "AWS::Lambda::EventSourceMapping",
+      "Properties": {
+        "EventSourceArn" : {"Ref" : "EXAMStreamARN"},
+        "FunctionName" : { "Fn::GetAtt" : ["LAMBDA", "Arn"] },
+        "StartingPosition" : "LATEST",
+        "Enabled" : "true"
+      }
+    }
+  }
+}

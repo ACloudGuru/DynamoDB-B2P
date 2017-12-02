@@ -1,0 +1,150 @@
+{
+  "Parameters" : {
+    "SNSTopicArn" : {
+      "Type" : "String",
+      "Description" : "ARN of SNS Topic for notifications"
+    },
+    "EXAMStreamARN" : {
+      "Type" : "String",
+      "Description" : "ARN of the Dynamo DB Stream for the lo_exams table.."
+    }
+  },
+  "Resources" : {
+    "IAMRole" : {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+          "AssumeRolePolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                  {
+                      "Effect": "Allow",
+                      "Principal": {
+                          "Service": ["lambda.amazonaws.com"]
+                      },
+                      "Action": ["sts:AssumeRole"]
+                  }
+              ]
+          },
+          "Path": "/"
+      }
+    },
+    "IAMPolicy" : {
+      "DependsOn": [
+          "IAMRole"
+      ],
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+          "PolicyName": "LambdaTriggerPermissions",
+          "Roles": [
+              {"Ref": "IAMRole"}
+          ],
+          "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                  {
+                      "Effect": "Allow",
+                      "Action": ["logs:*"],
+                      "Resource": ["arn:aws:logs:*:*:*"]
+                  },
+                  {
+                      "Effect": "Allow",
+                      "Action": [
+                        "sns:*"
+                      ],
+                      "Resource": ["*"]
+                  },
+                  {
+                      "Effect": "Allow",
+                      "Action": [
+                        "s3:*"
+                      ],
+                      "Resource": ["*"]
+                  },
+                  {
+                      "Effect": "Allow",
+                      "Action": [
+                        "dynamodb:*"
+                      ],
+                      "Resource": ["*"]
+                  }
+              ]
+          }
+      }
+    },
+    "LAMBDA" : {
+      "Type": "AWS::Lambda::Function",
+      "DependsOn": [
+          "IAMRole",
+          "IAMPolicy"
+      ],
+      "Properties" : {
+        "Role": {
+            "Fn::GetAtt": ["IAMRole", "Arn"]
+        },
+        "Code" : {
+          "ZipFile" : {
+            "Fn::Join" : [
+              "",
+              [
+                "import boto3\n",
+                "snsarn = '", {"Ref" : "SNSTopicArn"}, "'\n",
+                "def lambda_handler(event, context):\n",
+                "\tfor r in event['Records']:\n",
+                "\t\trecord=r['dynamodb']\n",
+                "\t\tif 'NewImage' in record.keys():\n",
+                "\t\t\tif ('grade' in record['NewImage'].keys()) and (int(record['NewImage']['grade']['N']) < 65):\n",
+                "\t\t\t\tgrade = int(record['NewImage']['grade']['N'])\n",
+                "\t\t\t\tprint 'Parsing exam record [%s] - Grade [%i] recieved' % (record['NewImage']['id']['S'], grade)\n",
+                "\t\t\t\tdb_r = boto3.resource('dynamodb', region_name=r['awsRegion'])\n",
+                "\t\t\t\tt_id = record['NewImage']['t_id']['S']\n",
+                "\t\t\t\tt_perf = get_teacher_average(t_id, db_r)\n",
+                "\t\t\t\tif t_perf < 65:\n",
+                "\t\t\t\t\ts_id =  record['NewImage']['s_id']['S']\n",
+                "\t\t\t\t\tsns = boto3.client('sns', region_name=r['awsRegion'])\n",
+                "\t\t\t\t\tm = 'Teacher [%s] achieved a low grade from student [%s]' % (t_id, s_id)\n",
+                "\t\t\t\t\tm += 'with [%d%%] and has an average of [%d%%]' %(grade, t_perf)\n",
+                "\t\t\t\t\tprint 'Sending Message :: %s' % m\n",
+                "\t\t\t\t\tsns.publish(TargetArn=snsarn, Subject='Teacher Low Grade Average', Message=m)\n",
+                "\t\t\t\telse:\n",
+                "\t\t\t\t\tprint 'Teacher [%s] is perfoming above requirements at [%d%%] - no notifications required' % (t_id, t_perf)\n",
+                "\treturn('Function Completed')\n",
+                "\n",
+                "def get_teacher_average(t_id, conn):\n",
+                "\tr = conn.Table('lo_exams').query(\\\n",
+                "\t\tReturnConsumedCapacity='TOTAL', ExpressionAttributeValues={':teacherid' : t_id}, \\\n",
+                "\t\tKeyConditionExpression='t_id = :teacherid', IndexName='teacherperformance' )\n",
+                "\tdata=r['Items']\n",
+                "\twhile 'LastEvaluatedKey' in r:\n",
+                "\t\tr=db_r.Table('lo_exams').query(\\\n",
+                "\t\t\tReturnConsumedCapacity='TOTAL', ExpressionAttributeValues={':teacherid' : t_id}, \\\n",
+                "\t\t\tExclusiveStartKey=r['LastEvaluatedKey'],KeyConditionExpression='t_id = :teacherid', \\\n",
+                "\t\t\tIndexName='teacherperformance' )\n",
+                "\t\tdata.extend(r['Items'])\n",
+                "\tt_total=0\n",
+                "\tfor d in data:\n",
+                "\t\tt_total = t_total + int(d['grade'])\n",
+                "\tt_avg=t_total / int(len(data)+1)\n",
+                "\n",
+                "\treturn t_avg\n",
+                "\n"
+              ]
+            ]
+          }
+        },
+        "Timeout": 300,
+        "Handler": "index.lambda_handler",
+        "Runtime": "python2.7",
+        "MemorySize": 128
+      }
+    },
+    "LambdaEventSource" : {
+      "Type": "AWS::Lambda::EventSourceMapping",
+      "Properties": {
+        "EventSourceArn" : {"Ref" : "EXAMStreamARN"},
+        "FunctionName" : { "Fn::GetAtt" : ["LAMBDA", "Arn"] },
+        "StartingPosition" : "LATEST",
+        "Enabled" : "true"
+      }
+    }
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "Parameters" : {
+    "EmailAddr" : {
+      "Type" : "String",
+      "Description" : "Enter the email address to recieve notifications at"
+    }
+  },
+  "Resources" : {
+    "SNS" : {
+      "Type" : "AWS::SNS::Topic",
+      "Properties" : {
+        "Subscription" : [
+          { "Protocol" : "email", "Endpoint" : {"Ref" : "EmailAddr"}}
+        ]
+      }
+    }
+  },
+  "Outputs" : {
+    "SNSTopicARN" : { "Description" : "Notificaiton Topic ARN", "Value" : {"Ref" : "SNS"} },
+    "SNSTopicName" : { "Description" : "Notificaiton Topic Name", "Value" : {"Fn::GetAtt" : ["SNS", "TopicName"]} }
+  }
+}

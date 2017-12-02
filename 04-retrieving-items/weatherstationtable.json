@@ -1,0 +1,21 @@
+{
+  "Resources" : {
+    "table" : {
+      "Type" : "AWS::DynamoDB::Table",
+      "Properties" : {
+        "TableName" : "weatherstation_data",
+        "ProvisionedThroughput" : {"ReadCapacityUnits" : 1, "WriteCapacityUnits" : 1},
+        "KeySchema" :
+        [
+          {"AttributeName" : "station_id", "KeyType" : "HASH"},
+          {"AttributeName" : "dateandtime", "KeyType" : "RANGE"}
+        ],
+        "AttributeDefinitions" :
+        [
+          {"AttributeName" : "station_id", "AttributeType" : "S"},
+          {"AttributeName" : "dateandtime", "AttributeType" : "S"}
+        ]
+      }
+    }
+  }
+}

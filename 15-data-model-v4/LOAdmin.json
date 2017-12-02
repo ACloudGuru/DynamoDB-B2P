@@ -1,0 +1,41 @@
+{
+  "Resources" : {
+    "LOAdmin" : {
+      "Type": "AWS::IAM::User",
+      "Properties" : {
+        "UserName" : "loadmin",
+        "Policies" : [
+          {
+            "PolicyName" : "full-admin",
+            "PolicyDocument" : {
+              "Version" : "2012-10-17",
+              "Statement" : [
+                {
+                  "Effect" : "Allow",
+                  "Action" : "*",
+                  "Resource" : "*"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "LOAdminKeys" : {
+      "Type": "AWS::IAM::AccessKey",
+      "Properties" : {
+        "UserName" : {"Ref" : "LOAdmin"}
+      }
+    }
+  },
+  "Outputs" : {
+    "LOAdminAccessKeyID" : {
+      "Description" : "Learning Online - Admin User - Access Key ID",
+      "Value" : {"Ref" : "LOAdminKeys"}
+    },
+    "LOAdminSecretAccessKey" : {
+      "Description" : "Learning Online - Admin User - Secret Access Key",
+      "Value" : {"Fn::GetAtt" : ["LOAdminKeys", "SecretAccessKey"]}
+    }
+  }
+}

@@ -1,0 +1,23 @@
+aws dynamodb put-item --table-name weatherstation_data --item '{"station_id":{"S":"000001"},"dateandtime" : {"S": "2015/12/25 00:00"},"temperature": {"N" : "0"}}' --profile loadmin
+
+aws dynamodb put-item --table-name weatherstation_data --item '{"station_id":{"S":"000001"},"dateandtime" : {"S": "2015/12/25 00:00"},"temperature": {"N" : "0"}}' --return-consumed-capacity TOTAL --profile loadmin
+
+aws dynamodb put-item --table-name weatherstation_data --item '{"station_id":{"S":"000001"},"dateandtime" : {"S": "2015/12/25 00:00"},"temperature": {"N" : "10"}}' --return-consumed-capacity TOTAL --profile loadmin
+
+aws dynamodb put-item --table-name weatherstation_data --item '{"station_id":{"S":"000001"},"dateandtime" : {"S": "2015/12/25 00:00"},"temperature": {"N" : "10"}}' --return-consumed-capacity TOTAL --profile loadmin
+
+aws dynamodb put-item --table-name weatherstation_data --item '{"station_id":{"S":"000001"},"dateandtime" : {"S": "2015/12/25 00:00"},"temperature": {"N" : "100"}}' --return-consumed-capacity TOTAL --return-values ALL_OLD --profile loadmin
+
+aws dynamodb update-item --table-name weatherstation_data --key '{"station_id":{"S":"000001"},"dateandtime" : {"S": "2015/12/25 00:00"}}'  --update-expression "SET windspeed=:windspeed" --expression-attribute-values '{":windspeed" : {"N" : "100"}}' --profile loadmin
+
+aws dynamodb update-item --table-name weatherstation_data --key '{"station_id":{"S":"000001"},"dateandtime" : {"S": "2015/12/25 00:00"}}'  --update-expression "SET windspeed=:windspeed" --expression-attribute-values '{":windspeed" : {"N" : "100"}}' --profile loadmin
+
+aws dynamodb update-item --table-name weatherstation_data --key '{"station_id":{"S":"000001"},"dateandtime" : {"S": "2015/12/25 00:00"}}'  --update-expression "SET windspeed=:windspeed" --expression-attribute-values '{":windspeed" : {"N" : "200"}}' --return-values ALL_NEW --profile loadmin
+
+aws dynamodb update-item --table-name weatherstation_data --key '{"station_id":{"S":"000001"},"dateandtime" : {"S": "2015/12/25 00:00"}}'  --update-expression "SET windspeed=:windspeed" --expression-attribute-values '{":windspeed" : {"N" : "300"}}' --return-values UPDATED_NEW --profile loadmin
+
+aws dynamodb delete-item --table-name weatherstation_data --key '{"station_id":{"S":"000001"},"dateandtime" : {"S": "2015/12/25 00:00"}}' --profile loadmin
+
+aws dynamodb delete-item --table-name weatherstation_data --key '{"station_id":{"S":"000001"},"dateandtime" : {"S": "2015/12/25 00:00"}}' --profile loadmin
+
+aws dynamodb delete-item --table-name weatherstation_data --key '{"station_id":{"S":"000001"},"dateandtime" : {"S": "2015/12/25 00:00"}}' --return-consumed-capacity TOTAL --profile loadmin

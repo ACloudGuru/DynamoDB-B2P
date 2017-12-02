@@ -1,0 +1,13 @@
+CREATE EXTERNAL TABLE exams(id string, b_id string, ci_id string, comments string, dateandtimestarted string, duration bigint, grade bigint, location string, m_id string, s_id string, t_id string, entrancepic string, physicalscan string, void string) 
+STORED BY 'org.apache.hadoop.hive.dynamodb.DynamoDBStorageHandler'
+TBLPROPERTIES ("dynamodb.table.name" = "lo_exams",
+"dynamodb.column.mapping" = "id:id,b_id:b_id,ci_id:ci_id,comments:comments,dateandtimestarted:dateandtimestarted,duration:duration,grade:grade,location:location,m_id:m_id,s_id:s_id,t_id:t_id,entrancepic:entrancepic,physicalscan:physicalscan,void:void");
+
+CREATE EXTERNAL TABLE students(id string, birthdate string, city string, country string, email string, first_name string, govid string, idscan string, last_name string, sex string, state string, street_address string, zipcode string) 
+STORED BY 'org.apache.hadoop.hive.dynamodb.DynamoDBStorageHandler'
+TBLPROPERTIES ("dynamodb.table.name" = "lo_students",
+"dynamodb.column.mapping" = "id:id,birthdate:birthdate,city:city,country:country,email:email,first_name:first_name,govid:govid,idscan:idscan,last_name:last_name,sex:sex,state:state,street_address:street_address,zipcode:zipcode");
+
+
+Select s.first_name, s.last_name, e.id from students s 
+JOIN exams e ON s.id=e.s_id; 

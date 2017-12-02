@@ -1,0 +1,211 @@
+{
+  "Parameters" : {
+    "ExamsStreamARN" : {
+      "Type" : "String",
+      "Description" : "ARN of the Dynamo DB Stream for the lo_exams table.."
+    }
+  },
+  "Resources" : {
+    "S3Bucket" : {
+      "Type" : "AWS::S3::Bucket",
+      "Properties" : {
+        "AccessControl" : "PublicRead",
+        "WebsiteConfiguration" : {
+          "ErrorDocument" : "index.html",
+          "IndexDocument" : "index.html"
+        }
+      }
+    },
+    "S3BucketPolicy" : {
+      "Type" : "AWS::S3::BucketPolicy",
+      "Properties" : {
+        "Bucket" : {"Ref" : "S3Bucket"},
+        "PolicyDocument" : {
+          "Statement" : [
+            {
+              "Sid" : "ABC123",
+              "Action" : [
+                "s3:GetObject"
+              ],
+              "Effect" : "Allow",
+              "Resource" : {"Fn::Join" : ["", ["arn:aws:s3:::", {"Ref" : "S3Bucket"}, "/*"]]},
+              "Principal" : {
+                "AWS" : [ "*" ]
+              }
+            }
+          ]
+        }
+      }
+    },
+    "IAMRole" : {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+          "AssumeRolePolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                  {
+                      "Effect": "Allow",
+                      "Principal": {
+                          "Service": ["lambda.amazonaws.com"]
+                      },
+                      "Action": ["sts:AssumeRole"]
+                  }
+              ]
+          },
+          "Path": "/"
+      }
+    },
+    "IAMPolicy" : {
+      "DependsOn": [
+          "IAMRole"
+      ],
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+          "PolicyName": "LambdaTriggerPermissions",
+          "Roles": [
+              {"Ref": "IAMRole"}
+          ],
+          "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                  {
+                      "Effect": "Allow",
+                      "Action": ["logs:*"],
+                      "Resource": ["arn:aws:logs:*:*:*"]
+                  },
+                  {
+                      "Effect": "Allow",
+                      "Action": [
+                        "sns:*"
+                      ],
+                      "Resource": ["*"]
+                  },
+                  {
+                      "Effect": "Allow",
+                      "Action": [
+                        "s3:*"
+                      ],
+                      "Resource": ["*"]
+                  },
+                  {
+                      "Effect": "Allow",
+                      "Action": [
+                        "dynamodb:*"
+                      ],
+                      "Resource": ["*"]
+                  }
+              ]
+          }
+      }
+    },
+    "LAMBDA" : {
+      "Type": "AWS::Lambda::Function",
+      "DependsOn": [
+          "IAMRole",
+          "IAMPolicy"
+      ],
+      "Properties" : {
+        "Role": {
+            "Fn::GetAtt": ["IAMRole", "Arn"]
+        },
+        "Code" : {
+          "ZipFile" : {
+            "Fn::Join" : [
+              "",
+              [
+                "dashboardbucket = '",{"Ref" : "S3Bucket"} ,"'\n",
+                "dashboardbucketurl = '",{"Fn::GetAtt" : ["S3Bucket", "WebsiteURL"]},"'\n",
+                "\n",
+                "import boto3, string\n",
+                "print ('Loading Lambda Trigger - New Exam')\n",
+                "\n",
+                "def lambda_handler(event, context):\n",
+                "\tfor r in event['Records']:\n",
+                "\t\trecord=r['dynamodb']\n",
+                "\t\tregion=r['awsRegion']\n",
+                "\t\tif ('NewImage' in record.keys()):\n",
+                "\t\t\tupdate_html(record['NewImage']['b_id']['S'], region, dashboardbucket, 'booking')\n",
+                "\t\t\tupdate_html(record['NewImage']['location']['S'], region, dashboardbucket, 'location')\n",
+                "\n",
+                "def update_html (loc_or_id, region, bucket, updatetype):\n",
+                "\thtml = generate_html(updatetype, loc_or_id, region)\n",
+                "\twrites3file(bucket, loc_or_id+'.html', html, region)\n",
+                "\tprint '%s HTML file updated, %s/%s.html' % (updatetype, bucket, loc_or_id)\n",
+                "\n",
+                "def writes3file(bucket, objectname, body, region):\n",
+                "\t\tboto3.client('s3', region_name=region).put_object(Bucket=bucket, Key=objectname, Body=body.encode(), ContentType='text/html')\n",
+                "\n",
+                "def generate_html (htmltype, id, region):\n",
+                "\tdata = query(htmltype, id, region)\n",
+                "\thtml = '<!DOCTYPE html>\\n<html>\\n'\n",
+                "\thtml += html_head()\n",
+                "\thtml +='\\t<body>\\n'\n",
+                "\thtml +='<h1>Results for %s [%s]</h1>\\n' % (htmltype.title(), id)\n",
+                "\thtml +='<h1>[%d] Full or partial result(s)..</h1><br>\\n' % len(data)\n",
+                "\thtml +='<table style=\\\"width:100%\\\">\\n'\n",
+
+                "\thtml +='\\t\\t\\t<tr>\\n'\n",
+                "\thtml +='\\t\\t\\t\\t<th>Exam ID</th>\\n'\n",
+                "\thtml +='\\t\\t\\t\\t<th>Student ID</th>\\n'\n",
+                "\thtml +='\\t\\t\\t\\t<th>Course ID</th>\\n'\n",
+                "\thtml +='\\t\\t\\t\\t<th>Module ID</th>\\n'\n",
+                "\thtml +='\\t\\t\\t\\t<th>Started</th>\\n'\n",
+                "\thtml +='\\t\\t\\t\\t<th>Duration</th>\\n'\n",
+                "\thtml +='\\t\\t\\t\\t<th>Grade</th>\\n'\n",
+                "\thtml +='\\t\\t\\t</tr>\\n'\n",
+
+                "\tattr_list = ['id', 's_id', 'ci_id', 'm_id', 'dateandtimestarted', 'duration', 'grade']\n",
+                "\tfor x, item in enumerate(data):\n",
+                "\t\tline='\\t\\t\\t<tr>\\n'\n",
+                "\t\tfor attr in attr_list:\n",
+                "\t\t\tline+=('\\t\\t\\t\\t<td>%s</td>\\n' % str(item[attr]) if attr in item.keys() else '\\t\\t\\t\\t<td>N/A</td>\\n')\n",
+                "\t\tline+='\\t\\t\\t</tr>\\n'\n",
+                "\t\thtml +=line\n",
+                "\thtml +='\\t\\t</table>\\n'\n",
+                "\thtml += '\\t</body></html>'\n",
+                "\treturn html\n",
+                "\n",
+                "def html_head(): # generate HTML header - simple style sheet\n",
+                "\thtml = '\\t<head>\\n'\n",
+                "\thtml += '\\t\\t<meta http-equiv=\\\"refresh\\\" content=\\\"5\\\">\\n'\n",
+                "\thtml += '\\t\\t<link href=\\\"http://fonts.googleapis.com/css?family=Playfair+Display\\\" rel=\\\"stylesheet\\\" type=\\\"text/css\\\">\\n'\n",
+                "\thtml += '\\t\\t<link href=\\\"http://fonts.googleapis.com/css?family=Muli\\\" rel=\\\"stylesheet\\\" type=\\\"text/css\\\">\\n'\n",
+                "\thtml += '\\t\\t<style>\\n'\n",
+                "\thtml += '\\t\\t\\th1 {font: 400 40px/1.5 \\\"Playfair Display\\\", Georgia, serif;}\\n'\n",
+                "\thtml += '\\t\\t\\tbody {font: 400 14px/1.6 \\\"Muli\\\", Verdana, Helvetica, sans-serif;}\\n'\n",
+                "\thtml += '\\t\\t</style>\\n\\t</head>\\n'\n",
+                "\treturn html\n",
+                "\n",
+                "def query(q, id, region):\n",
+                "\texams = boto3.resource('dynamodb', region_name=region).Table('lo_exams') # create db connection\n",
+                "\tv = {':id' : id} # set value substitution\n",
+                "\tf = '#A = :id' # set filter\n",
+                "\tn=({'#A' : 'b_id'} if q=='booking' else {'#A' : 'location'}) # set name substituion\n",
+                "\tr = exams.scan(ExpressionAttributeValues=v,FilterExpression=f,ExpressionAttributeNames=n)\n",
+                "\tdata=r['Items']\n",
+                "\twhile 'LastEvaluatedKey' in r:\n",
+                "\t\tr = exams.scan(ExpressionAttributeValues=v,FilterExpression=f,ExclusiveStartKey=r['LastEvaluatedKey'], ExpressionAttributeNames=n)\n",
+                "\t\tdata.extend(r['Items'])\n",
+                "\treturn data\n",
+                "\n"
+              ]
+            ]
+          }
+        },
+        "Timeout": 300,
+        "Handler": "index.lambda_handler",
+        "Runtime": "python2.7",
+        "MemorySize": 128
+      }
+    },
+    "LambdaEventSource" : {
+      "Type": "AWS::Lambda::EventSourceMapping",
+      "Properties": {
+        "EventSourceArn" : {"Ref" : "ExamsStreamARN"},
+        "FunctionName" : { "Fn::GetAtt" : ["LAMBDA", "Arn"] },
+        "StartingPosition" : "LATEST",
+        "Enabled" : "true"
+      }
+    }
+  }
+}

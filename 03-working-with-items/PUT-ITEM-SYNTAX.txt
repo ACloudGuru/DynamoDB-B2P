@@ -1,0 +1,19 @@
+ITEM SYNTAX
+
+{
+    "AttributeName": {"TYPE": "AttributeValue"},
+    "AttributeName": {"TYPE": [LIST},
+    "AttributeName": {"TYPE": {"map" : "key"}
+}
+
+POPULATED
+
+{
+	"station_id": {"S": "000001"},
+	"dateandtime": {"S": "2015/12/25 00:00"},
+	"temperature": {"N': "0"}
+}
+
+FLATTENED FOR CLI USE
+
+{"station_id”: {"S": "000001"},"dateandtime": {"S": "2015/12/25 00:00"},"temperature": {"N": "0"}}

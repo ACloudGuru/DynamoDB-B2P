@@ -1,0 +1,30 @@
+aws dynamodb get-item --table-name weatherstation_data --key '{"station_id" : {"S" : "1"}}' --profile loadmin
+
+aws dynamodb get-item --table-name weatherstation_data --key '{"station_id" : {"S" : "1"}, "dateandtime" :{"S" : "201601011200"}}' --profile loadmin
+
+
+aws dynamodb get-item --table-name weatherstation_data --key '{"station_id" : {"S" : "1"}, "dateandtime" :{"S" : "CHANGEMETOAVALIDONE"}}' --profile loadmin
+
+
+aws dynamodb get-item --table-name weatherstation_data --key '{"station_id" : {"S" : "1"}, "dateandtime" :{"S" : "CHANGEMETOAVALIDONE"}}' --profile loadmin --return-consumed-capacity TOTAL
+
+aws dynamodb query --table-name weatherstation_data --key-condition-expression "station_id=:id" --expression-attribute-values '{ ":id" : { "S": "1"}}' --profile loadmin --return-consumed-capacity TOTAL
+
+aws dynamodb query --table-name weatherstation_data --key-condition-expression "station_id=:id" --expression-attribute-values '{ ":id" : { "S": "1"}}' --profile loadmin --return-consumed-capacity TOTAL --consistent-read
+
+
+aws dynamodb query --table-name weatherstation_data --key-condition-expression "station_id=:id AND dateandtime=:dat" --expression-attribute-values '{ ":id" : { "S": "1"}, ":dat" : { "S" : "CHANGEMETOVALID"}}' --profile loadmin --return-consumed-capacity TOTAL
+
+
+aws dynamodb query --table-name weatherstation_data --key-condition-expression "station_id=:id AND dateandtime BETWEEN :dat AND :dat2" --expression-attribute-values '{ ":id" : { "S": "1"}, ":dat" : { "S" : "201601010000"}, ":dat2" : {"S" : "201604302359"} }' --profile loadmin --return-consumed-capacity TOTAL
+
+
+aws dynamodb query --table-name weatherstation_data --key-condition-expression "station_id=:id" --expression-attribute-values '{ ":id" : { "S": "1"}}' --profile loadmin --return-consumed-capacity TOTAL
+
+aws dynamodb query --table-name weatherstation_data --key-condition-expression "station_id=:id" --filter-expression "temperature>:desiredtemp" --expression-attribute-values '{ ":id" : { "S": "1"},":desiredtemp" : {"N" : "25"}}' --profile loadmin --return-consumed-capacity TOTAL
+
+aws dynamodb scan --table-name weatherstation_data --consistent-read --filter-expression "uvindex>:uv" --expression-attribute-values '{ ":uv" : {"N" : "5"}}' --profile loadmin --return-consumed-capacity TOTAL
+
+
+
+

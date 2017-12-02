@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+  <script src="https://sdk.amazonaws.com/js/aws-sdk-2.5.4.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+  <script type="text/javascript">
+    AWS.config.update({accessKeyId: 'CHANGEME-AKID-STUDENT', secretAccessKey: 'CHANGEME-SECRET-STAFF'});
+    AWS.config.region = 'CHANGEME-REGION';
+  </script>
+  <head>
+    <link href='http://fonts.googleapis.com/css?family=Playfair+Display' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Muli' rel='stylesheet' type='text/css'>
+    <style>
+      h1 {font: 400 60px/1.5 'Playfair Display', Georgia, serif;}
+      p {font: 400 16px/1.6 'Muli', Verdana, Helvetica, sans-serif;}
+    </style>
+  </head>
+  <body>
+    <h1>Learning Online - Portal POC - Student</h1>
+    <p id="buttonsnboxes">
+      <script>
+        function studentList() {
+          var table = new AWS.DynamoDB({params: {TableName: 'lo_students'}});
+          var key = document.getElementById("student").value;
+          table.getItem({Key: {s_id: {S: key}}}, function(err, data) {
+            if (err) document.getElementById("results").innerHTML = "Error Occured.. Permissions ??";
+            else {
+              var html = "<table border=\"1\"><tr><td>ID</td><td>FirstName</td><td>Last_Name</td>"
+              html +="<td>sex</td><td>DOB</td><td>street_address</td><td>city</td><td>zipcode</td><td>country</td>"
+              html +="<td>govid</td><td>idscan</td></tr>"
+              html +="<tr>"
+              html +=('<td>'+data.Item.s_id["S"]+'</td>')
+              html +=('<td>'+data.Item.first_name["S"]+'</td>')
+              html +=('<td>'+data.Item.last_name["S"]+'</td>')
+              html +=('<td>'+data.Item.sex["S"]+'</td>')
+              html +=('<td>'+data.Item.birthdate["S"]+'</td>')
+              html +=('<td>'+data.Item.street_address["S"]+'</td>')
+              html +=('<td>'+data.Item.city["S"]+'</td>')
+              html +=('<td>'+data.Item.zipcode["S"]+'</td>')
+              html +=('<td>'+data.Item.country["S"]+'</td>')
+              html +=('<td>'+data.Item.govid["S"]+'</td>')
+              html +=('<td>'+data.Item.govid["S"]+'</td>')
+              html +="</tr>"
+              jQuery("#results").html(html)
+            }
+            //document.getElementById("results").innerHTML = data.Item;
+          });
+        }
+      </script>
+      <script>
+        function courseList() {
+          var table = new AWS.DynamoDB({params: {TableName: 'lo_courses'}});
+          table.scan({}, function(err, data) {
+            if (err) document.getElementById("results").innerHTML = "Error Occured.. Permissions ??";
+            else {
+              var html = "<table border=\"1\"><tr><td>#</td><td>Course ID</td><td>Description</td><td>Passmark %</td></tr>"
+              jQuery.each(data.Items, function(index,obj) {
+                html+= ('</tr><td>'+index+'</td><td>'+obj.c_id["S"]+'</td><td>'+obj.description["S"]+'</td><td>'+obj.passmark["N"]+'</td></tr>')
+              })
+              html += "</table>"
+              jQuery("#results").html(html)
+            }
+          });
+        }
+      </script>
+      <table>
+        <tr>
+          <td> Student </td>
+          <td> Course </td>
+        </tr>
+        <tr>
+          <td> <input type="text" id="student" value="changeme"> </td>
+          <td></td>
+        </tr>
+        <tr>
+          <td><button onclick="studentList()">Retrieve Student Details</button></td>
+          <td><button onclick="courseList()">List Courses</button></td>
+        </tr>
+      </table>
+    </p>
+    <p id="results">
+    </p>
+  </body>
+</html>

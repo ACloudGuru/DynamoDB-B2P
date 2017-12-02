@@ -1,0 +1,19 @@
+{
+  "Version" : "2012-10-17",
+  "Statement" : [
+
+    {
+      "Sid": "ReadAllCourses",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:GetItem",
+        "dynamodb:BatchGetItem",
+        "dynamodb:Query",
+        "dynamodb:Scan"
+      ],
+      "Resource": [
+        "COURSESTABLEARN"
+      ]
+    }
+  ]
+}

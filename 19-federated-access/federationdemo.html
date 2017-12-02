@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<script src="https://sdk.amazonaws.com/js/aws-sdk-2.5.4.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+<script src="https://apis.google.com/js/platform.js" async defer></script>
+<script type="text/javascript">
+  var creds = new AWS.CognitoIdentityCredentials({
+    IdentityPoolId: 'CHANGEME-IDPOOL'
+  })
+  AWS.config.update({
+    region: 'CHANGEME-REGION',
+    credentials: creds
+  });
+</script>
+<head>
+  <link href='http://fonts.googleapis.com/css?family=Playfair+Display' rel='stylesheet' type='text/css'>
+  <link href='http://fonts.googleapis.com/css?family=Muli' rel='stylesheet' type='text/css'>
+  <meta name="google-signin-client_id" content="CHANGEME-GOOGLECLIENTID">
+  <style>
+    h1 {font: 400 60px/1.5 'Playfair Display', Georgia, serif;}
+    p {font: 400 16px/1.6 'Muli', Verdana, Helvetica, sans-serif;}
+  </style>
+</head>
+<body>
+  <p id="signinout">
+    <table>
+      <tr>
+        <td> <div class="g-signin2" data-onsuccess="onSignIn"></div> </td>
+        <td> <div id="customBtn"> <a href="#" onclick="signOut();">Sign out</a></div> </td>
+      </tr>
+    </table>
+  </p>
+  <p id="title">
+    <h1> Learning Online - Demo - Identity Federation </h1>
+  </p>
+  <p id="subtitle">
+  </p>
+  <p id="buttonsnboxes">
+    <table>
+      <tr>
+        <td> Student </td>
+        <td> Course </td>
+      </tr>
+      <tr>
+        <td> <input type="text" id="student" value="changeme"> </td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><button onclick="studentList()">Retrieve Student Details</button></td>
+        <td><button onclick="courseList()">List Courses</button></td>
+      </tr>
+    </table>
+  </p>
+
+  <p id="results">
+  </p>
+
+  <script>
+
+  jQuery("#subtitle").html("<table border=\"1\"><tr><td> Authentication Status </td><td> Guest </td></tr></table>");
+
+  function onSignIn(googleUser) {
+
+    var profile = googleUser.getBasicProfile();
+    console.log('ID: ' + profile.getId()); // Do not send to your backend! Use an ID token instead.
+    console.log('Name: ' + profile.getName());
+    console.log('Image URL: ' + profile.getImageUrl());
+    console.log('Email: ' + profile.getEmail());
+    var id_token = googleUser.getAuthResponse().id_token;
+    creds.params.Logins = {};
+    creds.params.Logins['accounts.google.com'] = id_token;
+    creds.expired = true;
+    jQuery("#subtitle").html("<table border=\"1\"><tr><td> Authentication Status </td><td> Authenticated Google </td></tr></table>");
+
+
+  }
+  function signOut() {
+    var auth2 = gapi.auth2.getAuthInstance();
+    auth2.signOut().then(function () {
+      console.log('User signed out.');
+      jQuery("#results").html("");
+      jQuery("#subtitle").html("<table border=\"1\"><tr><td> Authentication Status </td><td> Guest </td></tr></table>");
+      creds.expired = true;
+      AWS.config.credentials.clearCachedId();
+      location.reload();
+    });
+  }
+
+  function courseList() {
+    var table = new AWS.DynamoDB({params: {TableName: 'lo_courses'}});
+    table.scan({}, function(err, data) {
+      if (err) document.getElementById("results").innerHTML = "Error Occured.. Permissions ??";
+      else {
+        var html = "<table border=\"1\"><tr><td>#</td><td>Course ID</td><td>Description</td><td>Passmark %</td></tr>"
+        jQuery.each(data.Items, function(index,obj) {
+          html+= ('</tr><td>'+index+'</td><td>'+obj.id["S"]+'</td><td>'+obj.description["S"]+'</td><td>'+obj.passmark["N"]+'</td></tr>')
+        })
+        html += "</table>"
+        jQuery("#results").html(html)
+      }
+    });
+  }
+  function studentList() {
+    var table = new AWS.DynamoDB({params: {TableName: 'lo_students'}});
+    var key = document.getElementById("student").value;
+    table.getItem({Key: {id: {S: key}}}, function(err, data) {
+      if (err) document.getElementById("results").innerHTML = "Error Occured.. Permissions ??";
+      else {
+        var html = "<table border=\"1\"><tr><td>ID</td><td>FirstName</td><td>Last_Name</td>"
+        html +="<td>sex</td><td>DOB</td><td>street_address</td><td>city</td><td>state</td><td>zipcode</td><td>country</td>"
+        html +="<td>govid</td><td>idscan</td></tr>"
+        html +="<tr>"
+        html +=('<td>'+data.Item.id["S"]+'</td>')
+        html +=('<td>'+data.Item.first_name["S"]+'</td>')
+        html +=('<td>'+data.Item.last_name["S"]+'</td>')
+        html +=('<td>'+data.Item.sex["S"]+'</td>')
+        html +=('<td>'+data.Item.birthdate["S"]+'</td>')
+        html +=('<td>'+data.Item.street_address["S"]+'</td>')
+        html +=('<td>'+data.Item.city["S"]+'</td>')
+        html +=('<td>'+data.Item.state["S"]+'</td>')
+        html +=('<td>'+data.Item.zipcode["S"]+'</td>')
+        html +=('<td>'+data.Item.country["S"]+'</td>')
+        html +=('<td>'+data.Item.govid["S"]+'</td>')
+        html +=('<td>'+data.Item.govid["S"]+'</td>')
+        html +="</tr>"
+        jQuery("#results").html(html)
+      }
+      //document.getElementById("results").innerHTML = data.Item;
+    });
+  }
+  </script>
+
+</body>
+</html>

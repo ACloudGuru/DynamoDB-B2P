@@ -1,0 +1,38 @@
+{
+  "Version" : "2012-10-17",
+  "Statement" : [
+    {
+      "Sid": "AllowAccessToOnlyItemsMatchingUserID",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:GetItem",
+        "dynamodb:BatchGetItem",
+        "dynamodb:Query",
+        "dynamodb:Scan"
+      ],
+      "Resource": [
+        "STUDENTTABLEARN"
+      ],
+      "Condition" : {
+        "ForAllValues:StringEquals" : {
+          "dynamodb:LeadingKeys" : [
+            "STUDENTID"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "ReadAllCourses",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:GetItem",
+        "dynamodb:BatchGetItem",
+        "dynamodb:Query",
+        "dynamodb:Scan"
+      ],
+      "Resource": [
+        "COURSESTABLEARN"
+      ]
+    }
+  ]
+}

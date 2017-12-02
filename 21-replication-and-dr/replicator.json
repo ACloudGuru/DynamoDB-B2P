@@ -1,0 +1,157 @@
+{
+  "Parameters" : {
+    "pseedcomplete" : {
+      "Type" : "String",
+      "Description" : "Has the initial data copy completed if applicable?, enable this when it has",
+      "Default" : "false",
+      "AllowedValues" : ["true", "false"]
+    },
+    "pdestinationTable" : {
+      "Type" : "String",
+      "Description" : "Destination Table"
+    },
+    "pdestinationRegion" : {
+      "Type" : "String",
+      "Description" : "Destination Region"
+    },
+    "psourceStreamARN" : {
+      "Type" : "String",
+      "Description" : "ARN of Source Database Table Stream"
+    },
+    "pSNSARN" : {
+      "Type" : "String",
+      "Description" : "ARN of Error SNS Topic"
+    },
+    "pstartingposition" : {
+      "Type" : "String",
+      "Description" : "Starting position for replication",
+      "AllowedValues" : ["LATEST", "TRIM_HORIZON"],
+      "Default" : "TRIM_HORIZON"
+    }
+  },
+  "Resources" : {
+    "IAMRole" : {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+          "AssumeRolePolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                  {
+                      "Effect": "Allow",
+                      "Principal": {
+                          "Service": ["lambda.amazonaws.com"]
+                      },
+                      "Action": ["sts:AssumeRole"]
+                  }
+              ]
+          },
+          "Path": "/"
+      }
+    },
+    "IAMPolicy" : {
+      "DependsOn": [
+          "IAMRole"
+      ],
+      "Type": "AWS::IAM::Policy",
+      "Properties": {
+          "PolicyName": "LambdaTriggerPermissions",
+          "Roles": [
+              {"Ref": "IAMRole"}
+          ],
+          "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                  {
+                      "Effect": "Allow",
+                      "Action": ["logs:*"],
+                      "Resource": ["arn:aws:logs:*:*:*"]
+                  },
+                  {
+                      "Effect": "Allow",
+                      "Action": [
+                        "sns:*"
+                      ],
+                      "Resource": ["*"]
+                  },
+                  {
+                      "Effect": "Allow",
+                      "Action": [
+                        "s3:*"
+                      ],
+                      "Resource": ["*"]
+                  },
+                  {
+                      "Effect": "Allow",
+                      "Action": [
+                        "dynamodb:*"
+                      ],
+                      "Resource": ["*"]
+                  }
+              ]
+          }
+      }
+    },
+    "LAMBDA" : {
+      "Type": "AWS::Lambda::Function",
+      "DependsOn": [
+          "IAMRole",
+          "IAMPolicy"
+      ],
+      "Properties" : {
+        "Role": {
+            "Fn::GetAtt": ["IAMRole", "Arn"]
+        },
+        "Code" : {
+          "ZipFile" : {
+            "Fn::Join" : [
+              "",
+              [
+                "import boto3, json, sys\n",
+                "from boto3.dynamodb.types import TypeDeserializer\n",
+                "print ('Loading Lambda Trigger - DR Replicator')\n",
+                "\n",
+                "desttable = '", {"Ref" : "pdestinationTable"}, "'\n",
+                "destregion = '", {"Ref" : "pdestinationRegion" },"'\n",
+                "snsarn = '", {"Ref" : "pSNSARN"}, "'\n",
+                "\n",
+                "deser = TypeDeserializer()\n",
+                "db_r = boto3.resource('dynamodb', region_name=destregion)\n",
+                "lo_table = db_r.Table(desttable)\n",
+                "def lambda_handler(event, context):\n",
+                "\tfor i, r in enumerate(event['Records']):\n",
+                "\t\ttry:\n",
+                "\t\t\tprint 'Processing record %d, record type [%s], keys [%s]' % (i, r['eventName'], r['dynamodb']['Keys'])\n",
+                "\t\t\tif r['eventName'] == 'REMOVE':\n",
+                "\t\t\t\tlo_table.delete_item(Key=deserialize(r['dynamodb']['Keys']))\n",
+                "\t\t\tif r['eventName'] in ['INSERT', 'MODIFY']:\n",
+                "\t\t\t\tlo_table.put_item(Item=deserialize(r['dynamodb']['NewImage']))\n",
+                "\t\texcept:\n",
+                "\t\t\tsns = boto3.client('sns', region_name=r['awsRegion']) # any errors, notify humans\n",
+                "\t\t\tsns.publish(TargetArn=snsarn, Subject='replication error', Message=str(sys.exc_info()[0]))\n",
+                "\n",
+                "def deserialize (obj):\n",
+                "\ttemp={}\n",
+                "\tfor key in obj:\n",
+                "\t\ttemp[key] = deser.deserialize(obj[key])\n",
+                "\treturn temp\n"
+              ]
+            ]
+          }
+        },
+        "Timeout": 300,
+        "Handler": "index.lambda_handler",
+        "Runtime": "python2.7",
+        "MemorySize": 128
+      }
+    },
+    "LambdaEventSource" : {
+      "Type": "AWS::Lambda::EventSourceMapping",
+      "Properties": {
+        "EventSourceArn" : {"Ref" : "psourceStreamARN"},
+        "FunctionName" : { "Fn::GetAtt" : ["LAMBDA", "Arn"] },
+        "StartingPosition" : {"Ref": "pstartingposition"},
+        "Enabled" : {"Ref" : "pseedcomplete"}
+      }
+    }
+  }
+}

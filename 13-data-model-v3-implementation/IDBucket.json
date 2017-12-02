@@ -1,0 +1,45 @@
+{
+  "Resources" : {
+    "idbucket" : {
+      "Type" : "AWS::S3::Bucket",
+      "Properties" : {
+        "AccessControl" : "PublicRead",
+        "WebsiteConfiguration" : {
+          "ErrorDocument" : "index.html",
+          "IndexDocument" : "index.html"
+        }
+      }
+    },
+    "idbucketpolicy" : {
+      "Type" : "AWS::S3::BucketPolicy",
+      "Properties" : {
+        "Bucket" : {"Ref" : "idbucket"},
+        "PolicyDocument" : {
+          "Statement" : [
+            {
+              "Sid" : "ABC123",
+              "Action" : [
+                "s3:GetObject"
+              ],
+              "Effect" : "Allow",
+              "Resource" : {"Fn::Join" : ["", ["arn:aws:s3:::", {"Ref" : "idbucket"}, "/*"]]},
+              "Principal" : {
+                "AWS" : [ "*" ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "Outputs" : {
+    "BucketURL" : {
+      "Description" : "URL to access bucket",
+      "Value" : {"Fn::GetAtt" : ["idbucket", "WebsiteURL"]}
+    },
+    "BucketName" : {
+      "Description" : "Name of Bucket",
+      "Value" : {"Ref" : "idbucket"}
+    }
+  }
+}

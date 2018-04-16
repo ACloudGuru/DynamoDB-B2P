@@ -52,11 +52,11 @@
         "AWS::CloudFormation::Init" : {
           "config" : {
             "sources" : {
-              "/home/ec2-user/" : "https://github.com/acantril/aCloudGuru-DynamoDB/tarball/master"
+              "/home/ec2-user/" : "https://codeload.github.com/ACloudGuru/DynamoDB-B2P/zip/master"
             },
             "commands" : {
               "1-retryjson" : {
-                "command" : "mkdir -p /home/ec2-user/.aws/model && cp /home/ec2-user/01-configuring-your-aws-account/_retry.json \"$_\""
+                "command" : "mkdir -p /home/ec2-user/.aws/model && cp /home/ec2-user/DynamoDB-B2P-master/01-configuring-your-aws-account/_retry.json \"$_\""
               },
               "2-permissions" : {
                 "command" : "chown ec2-user:ec2-user /home/ec2-user/* -hR"

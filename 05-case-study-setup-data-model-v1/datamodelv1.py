@@ -18,6 +18,7 @@ from botocore.exceptions import ClientError
 from sys import version_info
 from base64 import b64encode
 from faker import Factory
+from time import sleep
 fake = Factory.create()
 py3 = version_info[0] > 2 #creates boolean value for test that Python major version > 2
 

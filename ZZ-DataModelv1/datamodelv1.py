@@ -278,6 +278,7 @@ def item_gen(Type, Counter): # Generate ITEM for type
     return i;
 #------------------------------------------------------------------------------
 def get_counter(keyname): #given id pkey name, return id to use
+    RETRY_EXCEPTIONS = () # defined variable with null to avoid > NameError: name 'RETRY_EXCEPTIONS' is not defined
     while True:
         try:
             current_id = db_r.Table("lo_counters").get_item(Key={'countername' : keyname},\

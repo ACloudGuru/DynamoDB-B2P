@@ -32,6 +32,7 @@ bucketname = 'YOURBUCKETNAMEHERE'
 
 #------------------------------------------------------------------------------
 def get_counter(keyname, db_r, **keywordparams): #given id pkey name, return id to use
+    RETRY_EXCEPTIONS = ()  # defined variable with null to avoid > NameError: name 'RETRY_EXCEPTIONS' is not defined
     toadd=1
     retries=0
     while True:

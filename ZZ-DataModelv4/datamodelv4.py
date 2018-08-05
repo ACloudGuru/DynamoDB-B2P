@@ -1,6 +1,7 @@
 
 # A Cloud Guru - Data Generating Script - Section 4 - Data Model 4
 # Author - Adrian Cantrill - 2016 - v1
+# Aug 2018 problems with 'date' type data being passed to Boto3. Treatment by converting to string during generation RL.
 
 ## PREREQS - images/ folder in same directory as this script
 ##          configured AWS tools
@@ -336,7 +337,8 @@ def item_gen(Type, uuid, uuiddict, Idbucket): # Generate ITEM for type
         i['first_name'] = str(fake.first_name())
         i['last_name'] = str(fake.last_name())
         i['email'] = str(p['mail'])
-        i['birthdate'] = str(p['birthdate'])
+        # i['birthdate'] = str(p['birthdate'])
+        i['birthdate'] = p['birthdate'].isoformat()
         i['sex'] = str(p['sex'])
         i['street_address'] = str(fake.street_address())
         i['city'] = str(fake.city())
@@ -351,7 +353,8 @@ def item_gen(Type, uuid, uuiddict, Idbucket): # Generate ITEM for type
         i['first_name'] = str(fake.first_name())
         i['last_name'] = str(fake.last_name())
         i['email'] = str(p['mail'])
-        i['birthdate'] = str(p['birthdate'])
+        # i['birthdate'] = str(p['birthdate'])
+        i['birthdate'] = p['birthdate'].isoformat()
         i['sex'] = str(p['sex'])
         i['street_address'] = str(fake.street_address())
         i['city'] = str(fake.city())

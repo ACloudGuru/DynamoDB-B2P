@@ -71,7 +71,8 @@ def item_gen(Type, Counter, Idbucket, db_r, s3_c): # Generate ITEM for type
         i['last_name'] = fake.last_name()
         i['email'] = p['mail']
         i['state'] = fake.state()
-        i['birthdate'] = p['birthdate']
+        # i['birthdate'] = p['birthdate']
+        i['birthdate'] = p['birthdate'].isoformat()
         i['sex'] = p['sex']
         i['street_address'] = fake.street_address()
         i['city'] = fake.city()
@@ -85,7 +86,8 @@ def item_gen(Type, Counter, Idbucket, db_r, s3_c): # Generate ITEM for type
         i['first_name'] = fake.first_name()
         i['last_name'] = fake.last_name()
         i['email'] = p['mail']
-        i['birthdate'] = p['birthdate']
+        # i['birthdate'] = p['birthdate']
+        i['birthdate'] = p['birthdate'].isoformat()
         i['sex'] = p['sex']
         i['state'] = fake.state()
         i['street_address'] = fake.street_address()

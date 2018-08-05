@@ -34,7 +34,8 @@ def item_gen(type, id):
         i['first_name'] = fake.first_name()
         i['last_name'] = fake.last_name()
         i['email'] = p['mail']
-        i['birthdate'] = p['birthdate']
+        # i['birthdate'] = p['birthdate']
+        i['birthdate'] = p['birthdate'].isoformat()
         i['sex'] = p['sex']
         i['street_address'] = fake.street_address()
         i['state'] = fake.state()

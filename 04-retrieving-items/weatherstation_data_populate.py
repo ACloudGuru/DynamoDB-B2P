@@ -1,6 +1,7 @@
 
 # A Cloud Guru - Data Generating Script - Weatherstation_data
 # Author - Adrian Cantrill - 2016 - v1
+# Aug 2018 problems with 'date' type data being passed to Boto3. Treatment by converting to string during generation RL.
 
 ## PREREQS
 ##          configured AWS tools

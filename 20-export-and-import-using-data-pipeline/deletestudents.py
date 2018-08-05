@@ -1,6 +1,7 @@
 
 # A Cloud Guru - Data Generating Script - Section 4 - Data Model 4
 # Author - Adrian Cantrill - 2016 - v1
+# Aug 2018 problems with 'date' type data being passed to Boto3. Treatment by converting to string during generation RL.
 
 ## PREREQS - images/ folder in same directory as this script
 ##          configured AWS tools

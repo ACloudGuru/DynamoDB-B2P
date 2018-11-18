@@ -42,7 +42,9 @@
 			},
 			"sa-east-1": {
 				"AMI": "ami-6dd04501"
-			},
+			}
+			,
+
 			"ca-central-1": {
 				"AMI": "ami-0b18956f"
 			},

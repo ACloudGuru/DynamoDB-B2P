@@ -42,9 +42,7 @@
 			},
 			"sa-east-1": {
 				"AMI": "ami-6dd04501"
-			}
-			,
-
+			},
 			"ca-central-1": {
 				"AMI": "ami-0b18956f"
 			},
@@ -73,6 +71,9 @@
 							},
 							"4-permissionsaws": {
 								"command": "chown ec2-user:ec2-user /home/ec2-user/.aws/ -R"
+							},
+							"5-permissionsLabFiles": {
+								"command": "chmod 755  /home/ec2-user/DynamoDB-B2P-master -R"
 							}
 						}
 					}

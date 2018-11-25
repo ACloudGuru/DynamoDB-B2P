@@ -51,6 +51,7 @@
       }
     }
   },
+
   "Resources": {
     "Ec2Instance": {
       "Metadata": {

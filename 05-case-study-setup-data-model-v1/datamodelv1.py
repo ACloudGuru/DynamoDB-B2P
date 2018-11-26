@@ -345,6 +345,6 @@ if __name__ == "__main__":
     for x in tables_to_create:
                 c_table(Table=x, t_config=table_config)
                 p_table(Table=x)
-                u_table(Table=x, RCU=2, WCU=2)
+                u_table(Table=x, RCU=1, WCU=1)
 
-    u_table(Table="lo_counters", RCU=2, WCU=2)
+    u_table(Table="lo_counters", RCU=1, WCU=1)

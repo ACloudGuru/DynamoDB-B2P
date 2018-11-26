@@ -25,18 +25,6 @@ db_r = loadmin_session.resource('dynamodb')
 
 
 #------------------------------------------------------------------------------
-def u_table(Table, RCU, WCU): # Update table with RCU and WCU
-    print "INFO :: Updating Capacity on table [%s]" % Table
-    db_r.Table(Table).update( \
-        ProvisionedThroughput = { 'ReadCapacityUnits' : RCU, 'WriteCapacityUnits' : WCU}
-    )
-    time.sleep(5)
-    while True:
-        if db_r.Table(Table).table_status == 'ACTIVE':
-            break
-        time.sleep(30)
-        print "INFO :: Waiting for update on table [%s]" % Table
-#------------------------------------------------------------------------------
 def strTimeProp(start, end, format, prop):
     """Get a time at a proportion of a range of two formatted times.
     start and end should be strings specifying times formated in the
@@ -102,6 +90,19 @@ def item_gen(station_id): # Generate ITEM for a given station ID
     i['lightlevel'] = random.randrange(1,100)
     return i;
 #------------------------------------------------------------------------------
+def u_table(Table, RCU, WCU):  # Update table with RCU and WCU
+  print "INFO :: Updating Capacity on table [%s]" % Table
+  db_r.Table(Table).update( \
+    ProvisionedThroughput={'ReadCapacityUnits': RCU, 'WriteCapacityUnits': WCU}
+  )
+  time.sleep(5)
+  while True:
+    if db_r.Table(Table).table_status == 'ACTIVE':
+      break
+    time.sleep(30)
+    print "INFO :: Waiting for update on table [%s]" % Table
+
+# ------------------------------------------------------------------------------
 if __name__ == "__main__":
     num_of_stations=10
     num_of_datapoints=100

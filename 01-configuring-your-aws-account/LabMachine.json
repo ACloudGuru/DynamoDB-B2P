@@ -12,8 +12,8 @@
       },
       "us-west-2": {
         "AMI": "ami-0bb5806b2e825a199"
-      },
-
+      }
+      ,
       "eu-north-1": {
         "AMI": "ami-86fe70f8"
       },

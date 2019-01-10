@@ -2,6 +2,7 @@
 # A Cloud Guru - Data Generating Script - Weatherstation_data
 # Author - Adrian Cantrill - 2016 - v1
 # Aug 2018 problems with 'date' type data being passed to Boto3. Treatment by converting to string during generation RL.
+# Nov 2018 Added u_table to reduce idle CU
 
 ## PREREQS
 ##          configured AWS tools
@@ -21,6 +22,7 @@ from tqdm import tqdm
 loadmin_session = boto3.Session(profile_name='loadmin')
 db_c = loadmin_session.client('dynamodb')
 db_r = loadmin_session.resource('dynamodb')
+
 
 #------------------------------------------------------------------------------
 def strTimeProp(start, end, format, prop):
@@ -88,6 +90,19 @@ def item_gen(station_id): # Generate ITEM for a given station ID
     i['lightlevel'] = random.randrange(1,100)
     return i;
 #------------------------------------------------------------------------------
+def u_table(Table, RCU, WCU):  # Update table with RCU and WCU
+  print "INFO :: Updating Capacity on table [%s]" % Table
+  db_r.Table(Table).update( \
+    ProvisionedThroughput={'ReadCapacityUnits': RCU, 'WriteCapacityUnits': WCU}
+  )
+  time.sleep(5)
+  while True:
+    if db_r.Table(Table).table_status == 'ACTIVE':
+      break
+    time.sleep(30)
+    print "INFO :: Waiting for update on table [%s]" % Table
+
+# ------------------------------------------------------------------------------
 if __name__ == "__main__":
     num_of_stations=10
     num_of_datapoints=100
@@ -96,4 +111,8 @@ if __name__ == "__main__":
     t_conf=d_table() # generate table config
     c_table(t_conf) # create table, with the above config
     p_table(num_of_stations, num_of_datapoints) # populate the table with X rows
+    print("")
+    print("INFO :: Rest CU to minimum")
+
+    u_table(Table="weatherstation_data", RCU=1, WCU=1)
     print('INFO :: Data Entry Complete')

@@ -48,7 +48,8 @@ def item_gen(type, id):
             binary_data = file.read()
         i['idscan'] =  b64encode(binary_data)
     return i;
-#------------------------------------------------------------------------------
+
+#==============================================================================
 if __name__ == "__main__":
     tests = [5,10,25,100,1000]
     retries = 0 # used for backoff function
@@ -102,3 +103,5 @@ if __name__ == "__main__":
                         retries +=1
 
             print "INFO :: Test [%d] finished..." % n
+
+#--

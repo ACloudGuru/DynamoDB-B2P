@@ -16,4 +16,4 @@ POPULATED
 
 FLATTENED FOR CLI USE
 
-{"station_id”: {"S": "000001"},"dateandtime": {"S": "2015/12/25 00:00"},"temperature": {"N": "0"}}
+{"station_id": {"S": "000001"},"dateandtime": {"S": "2015/12/25 00:00"},"temperature": {"N": "0"}}
